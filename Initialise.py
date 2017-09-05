@@ -18,3 +18,4 @@ newExecutableFile = open("Templates/DDSim.sh", "w")
 newExecutableFile.write(content)
 newExecutableFile.close()
 
+os.system('chmod u+x Templates/DDSim.sh')
