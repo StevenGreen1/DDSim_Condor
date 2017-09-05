@@ -9,11 +9,16 @@ class CondorSupervisorLogic:
 ### Start of constructor
 ### ----------------------------------------------------------------------------------------------------
 
-    def __init__(self, stdHepFormat, stdHepPath, compactFile, nEvts, outputPath):
+    def __init__(self, compactFile, outputPath, useParticleGun = False, particleForGun = '', energyOfPartilceForGun = 0, numberOfParticlesFromGun = 1, numberOfParticlesPerFileFromGun = 1, stdHepFormat = '', stdHepPath = '', nEvtsPerStdHep = 1000):
         cwd = os.getcwd()
-        self._OutputPath = outputPath
         self._CompactFile = compactFile
-        self._NEvts = nEvts
+        self._OutputPath = outputPath
+        self._NEvts = nEvtsPerStdHep
+        self._UseParticleGun = useParticleGun
+        self._ParticleForGun = particleForGun
+        self._EnergyOfPartilceForGun = energyOfPartilceForGun
+        self._NumberOfParticlesPerFileFromGun = numberOfParticlesPerFileFromGun
+        self._NumberOfParticlesFromGun = numberOfParticlesFromGun
 
         'Logger'
         logFullPath = os.path.join(cwd,'CondorSupervisor.log')
@@ -28,15 +33,11 @@ class CondorSupervisorLogic:
         self.logger.addHandler(handler)
         self.logger.info('Output path : ' + self._OutputPath)
 
-        'Slcio Folder Info'
-        self._SlcioFolder = os.path.join(self._OutputPath, 'Slcio')
-        if not os.path.exists(self._SlcioFolder):
-            os.makedirs(self._SlcioFolder)
-
         'StdHep Path Information'
         self._StdHepFormat = stdHepFormat
         self._StdHepPath = stdHepPath
-        self._StdHepFiles = self.getStdHepFiles()
+        if not useParticleGun:
+            self._StdHepFiles = self.getStdHepFiles()
 
         'Condor'
         self._UseCondor = True
@@ -79,47 +80,68 @@ class CondorSupervisorLogic:
 
     def runDDSim(self):
         self.formatArguments()
-        print self._CondorArguments
+        #print self._CondorArguments
         self.runCondorJobs()
-        #self.checkCondorJobs()
+        self.checkCondorJobs()
 
 ### ----------------------------------------------------------------------------------------------------
 ### End of runDDSim function
 ### ----------------------------------------------------------------------------------------------------
+### Start of formatArguments function
+### ----------------------------------------------------------------------------------------------------
 
     def formatArguments(self):
-        for energy in [91,200,360,500]:
-            counter = 0
-            jobName = 'Z_uds_' + str(energy) + '_GeV'
-            activeStdHepFormat = self._StdHepFormat
-            activeStdHepFormat = re.sub('ENERGY',str(energy),activeStdHepFormat)
+        if not self._UseParticleGun:
+            for energy in [91,200,360,500]:
+                counter = 0
+                jobName = 'Z_uds_' + str(energy) + '_GeV'
+                activeStdHepFormat = self._StdHepFormat
+                activeStdHepFormat = re.sub('ENERGY',str(energy),activeStdHepFormat)
 
-            stdHepFiles = []
-            stdHepFiles = list(self._StdHepFiles)
+                stdHepFiles = []
+                stdHepFiles = list(self._StdHepFiles)
 
-            if not stdHepFiles:
-                self.logger.debug('No files in input stdhep folder.')
-                self.logger.debug('StdHep Folder : ' + self._StdHepPath)
-                self.logger.debug('StdHep Format : ' + activeStdHepFormat)
-                sys.exit()
+                if not stdHepFiles:
+                    self.logger.debug('No files in input stdhep folder.')
+                    self.logger.debug('StdHep Folder : ' + self._StdHepPath)
+                    self.logger.debug('StdHep Format : ' + activeStdHepFormat)
+                    sys.exit()
 
-            for nfiles in range(len(stdHepFiles)):
-                nextFile = stdHepFiles.pop(0)
-                matchObj = re.match(activeStdHepFormat, nextFile, re.M|re.I)
+                for nfiles in range(len(stdHepFiles)):
+                    nextFile = stdHepFiles.pop(0)
+                    matchObj = re.match(activeStdHepFormat, nextFile, re.M|re.I)
 
-                if not matchObj:
-                    continue
+                    if not matchObj:
+                         continue
 
+                    counter += 1
+                    stdHepFileName = os.path.join(self._StdHepPath, nextFile)
+
+                    argument = '--compactFile ' + self._CompactFile + ' '
+                    argument += '--numberOfEvents ' + str(self._NEvts) + ' '
+                    argument += '--outputFile ' + os.path.join(self._OutputPath,jobName) + '_' + str(counter) + '.slcio '
+                    argument += '--inputFile ' + stdHepFileName + ' '
+                    self._CondorArguments.append(argument)
+
+        else:
+            jobName = self._ParticleForGun + '_' + str(self._EnergyOfPartilceForGun) + '_GeV'
+            counter = 1
+            for x in xrange(0, self._NumberOfParticlesFromGun, self._NumberOfParticlesPerFileFromGun):
                 counter += 1
-                stdHepFileName = os.path.join(self._StdHepPath, nextFile)
-
                 argument = '--compactFile ' + self._CompactFile + ' '
-                argument += '--numberOfEvents ' + str(self._NEvts) + ' '
+                argument += '--enableGun '
+                argument += '--gun.particle ' + self._ParticleForGun + ' '
+                argument += '--gun.energy ' + str(self._EnergyOfPartilceForGun) + '*GeV '
+                argument += '--gun.distribution uniform '
                 argument += '--outputFile ' + os.path.join(self._OutputPath,jobName) + '_' + str(counter) + '.slcio '
-                argument += '--inputFile ' + stdHepFileName + ' '
+                argument += '--numberOfEvents ' + str(self._NumberOfParticlesPerFileFromGun) + ' '
+                argument += '--random.seed ' + str(random.randint(1,1000001)) 
 
                 self._CondorArguments.append(argument)
 
+### ----------------------------------------------------------------------------------------------------
+### End of formatArguments
+### ----------------------------------------------------------------------------------------------------
 ### Start of runCondorJobs function
 ### ----------------------------------------------------------------------------------------------------
 
@@ -188,7 +210,7 @@ class CondorSupervisorLogic:
     def checkCondorJobs(self):
         self.logger.debug('Checking on the running condor jobs.')
         while True: 
-            nActiveJobs = self.nQueuedCondorJobs(self._DDSimExecutable)
+            nActiveJobs = self.nQueuedCondorJobs()
             if (nActiveJobs > 0):
                 time.sleep(10)
             else:
