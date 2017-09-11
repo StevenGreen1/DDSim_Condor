@@ -9,7 +9,7 @@ class CondorSupervisorLogic:
 ### Start of constructor
 ### ----------------------------------------------------------------------------------------------------
 
-    def __init__(self, compactFile, outputPath, useParticleGun = False, particleForGun = '', energyOfPartilceForGun = 0, numberOfParticlesFromGun = 1, numberOfParticlesPerFileFromGun = 1, stdHepFormat = '', stdHepPath = '', nEvtsPerStdHep = 1000):
+    def __init__(self, compactFile, steeringFile, outputPath, useParticleGun = False, particleForGun = '', energyOfPartilceForGun = 0, numberOfParticlesFromGun = 1, numberOfParticlesPerFileFromGun = 1, stdHepFormat = '', stdHepPath = '', nEvtsPerStdHep = 1000):
         cwd = os.getcwd()
         self._CompactFile = compactFile
         self._OutputPath = outputPath
@@ -19,6 +19,7 @@ class CondorSupervisorLogic:
         self._EnergyOfPartilceForGun = energyOfPartilceForGun
         self._NumberOfParticlesPerFileFromGun = numberOfParticlesPerFileFromGun
         self._NumberOfParticlesFromGun = numberOfParticlesFromGun
+        self._SteeringFile = steeringFile
 
         'Logger'
         logFullPath = os.path.join(cwd,'CondorSupervisor.log')
@@ -82,7 +83,7 @@ class CondorSupervisorLogic:
         self.formatArguments()
         #print self._CondorArguments
         self.runCondorJobs()
-        self.checkCondorJobs()
+        #self.checkCondorJobs()
 
 ### ----------------------------------------------------------------------------------------------------
 ### End of runDDSim function
@@ -118,6 +119,7 @@ class CondorSupervisorLogic:
                     stdHepFileName = os.path.join(self._StdHepPath, nextFile)
 
                     argument = '--compactFile ' + self._CompactFile + ' '
+                    argument += '--steeringFile ' + self._SteeringFile + ' '
                     argument += '--numberOfEvents ' + str(self._NEvts) + ' '
                     argument += '--outputFile ' + os.path.join(self._OutputPath,jobName) + '_' + str(counter) + '.slcio '
                     argument += '--inputFile ' + stdHepFileName + ' '
@@ -129,6 +131,7 @@ class CondorSupervisorLogic:
             for x in xrange(0, self._NumberOfParticlesFromGun, self._NumberOfParticlesPerFileFromGun):
                 counter += 1
                 argument = '--compactFile ' + self._CompactFile + ' '
+                argument += '--steeringFile ' + self._SteeringFile + ' '
                 argument += '--enableGun '
                 argument += '--gun.particle ' + self._ParticleForGun + ' '
                 argument += '--gun.energy ' + str(self._EnergyOfPartilceForGun) + '*GeV '
