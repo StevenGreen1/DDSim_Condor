@@ -34,6 +34,10 @@ class CondorSupervisorLogic:
         self.logger.addHandler(handler)
         self.logger.info('Output path : ' + self._OutputPath)
 
+        'Make Output Path'
+        if not os.path.exists(self._OutputPath):
+            os.makedirs(self._OutputPath)
+
         'StdHep Path Information'
         self._StdHepFormat = stdHepFormat
         self._StdHepPath = stdHepPath
