@@ -10,6 +10,7 @@ useParticleGun = True
 stdHepFormat = 'ZudsENERGY_(.*?).stdhep'
 stdHepPath = '/r06/lc/sg568/StdHepRepository'
 nEvtsPerStdHep = 1000
+nEvtsPerStdHepJob = 100
 
 # Edit for use of Particle Gun
 particleForGun = 'kaon0L'
@@ -20,7 +21,7 @@ numberOfParticlesPerFileFromGun = 1000
 energies = [30, 40, 50, 60, 70, 80, 90, 100]
 
 for energyOfPartilceForGun in energies:
-    CondorSupervisorLogic(compactFile, steeringFile, outputPath, useParticleGun = useParticleGun, particleForGun = particleForGun, energyOfPartilceForGun = energyOfPartilceForGun, numberOfParticlesFromGun = numberOfParticlesFromGun, numberOfParticlesPerFileFromGun = numberOfParticlesPerFileFromGun, stdHepFormat = stdHepFormat, stdHepPath = stdHepPath, nEvtsPerStdHep = nEvtsPerStdHep)
+    CondorSupervisorLogic(compactFile, steeringFile, outputPath, useParticleGun = useParticleGun, particleForGun = particleForGun, energyOfPartilceForGun = energyOfPartilceForGun, numberOfParticlesFromGun = numberOfParticlesFromGun, numberOfParticlesPerFileFromGun = numberOfParticlesPerFileFromGun, stdHepFormat = stdHepFormat, stdHepPath = stdHepPath, nEvtsPerStdHep = nEvtsPerStdHep, nEvtsPerStdHepJob = nEvtsPerStdHepJob)
 
 # Particle Gun Particles - http://geant4.cern.ch/UserDocumentation/UsersGuides/ForApplicationDeveloper/html/AllResources/Control/UIcommands/_gun_.html
 

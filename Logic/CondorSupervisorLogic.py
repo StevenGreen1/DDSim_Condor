@@ -9,11 +9,12 @@ class CondorSupervisorLogic:
 ### Start of constructor
 ### ----------------------------------------------------------------------------------------------------
 
-    def __init__(self, compactFile, steeringFile, outputPath, useParticleGun = False, particleForGun = '', energyOfPartilceForGun = 0, numberOfParticlesFromGun = 1, numberOfParticlesPerFileFromGun = 1, stdHepFormat = '', stdHepPath = '', nEvtsPerStdHep = 1000):
+    def __init__(self, compactFile, steeringFile, outputPath, useParticleGun = False, particleForGun = '', energyOfPartilceForGun = 0, numberOfParticlesFromGun = 1, numberOfParticlesPerFileFromGun = 1, stdHepFormat = '', stdHepPath = '', nEvtsPerStdHep = 1000, nEvtsPerStdHepJob = 100):
         cwd = os.getcwd()
         self._CompactFile = compactFile
         self._OutputPath = outputPath
-        self._NEvts = nEvtsPerStdHep
+        self._nEvtsPerStdHep = nEvtsPerStdHep
+        self._nEvtsPerStdHepJob = nEvtsPerStdHepJob
         self._UseParticleGun = useParticleGun
         self._ParticleForGun = particleForGun
         self._EnergyOfPartilceForGun = energyOfPartilceForGun
@@ -97,7 +98,7 @@ class CondorSupervisorLogic:
 
     def formatArguments(self):
         if not self._UseParticleGun:
-            for energy in [91,200,360,500]:
+            for energy in [3000]:
                 counter = 0
                 jobName = 'Z_uds_' + str(energy) + '_GeV'
                 activeStdHepFormat = self._StdHepFormat
@@ -119,16 +120,17 @@ class CondorSupervisorLogic:
                     if not matchObj:
                          continue
 
-                    counter += 1
                     stdHepFileName = os.path.join(self._StdHepPath, nextFile)
 
-                    argument = '--compactFile ' + self._CompactFile + ' '
-                    argument += '--steeringFile ' + self._SteeringFile + ' '
-                    argument += '--numberOfEvents ' + str(self._NEvts) + ' '
-                    argument += '--outputFile ' + os.path.join(self._OutputPath,jobName) + '_' + str(counter) + '.slcio '
-                    argument += '--inputFile ' + stdHepFileName + ' '
-                    self._CondorArguments.append(argument)
-
+                    for startEvent in xrange(0, self._nEvtsPerStdHep, self._nEvtsPerStdHepJob):
+                        counter += 1
+                        argument = '--compactFile ' + self._CompactFile + ' '
+                        argument += '--steeringFile ' + self._SteeringFile + ' '
+                        argument += '--numberOfEvents ' + str(self._nEvtsPerStdHepJob) + ' '
+                        argument += '--skipNEvents ' + str(startEvent) + ' '
+                        argument += '--outputFile ' + os.path.join(self._OutputPath,jobName) + '_' + str(counter) + '.slcio '
+                        argument += '--inputFile ' + stdHepFileName + ' '
+                        self._CondorArguments.append(argument)
         else:
             jobName = self._ParticleForGun + '_' + str(self._EnergyOfPartilceForGun) + '_GeV'
             counter = 1
